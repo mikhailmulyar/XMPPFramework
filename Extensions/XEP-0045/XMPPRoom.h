@@ -13,6 +13,7 @@ static NSString *const XMPPMUCNamespace      = @"http://jabber.org/protocol/muc"
 static NSString *const XMPPMUCUserNamespace  = @"http://jabber.org/protocol/muc#user";
 static NSString *const XMPPMUCAdminNamespace = @"http://jabber.org/protocol/muc#admin";
 static NSString *const XMPPMUCOwnerNamespace = @"http://jabber.org/protocol/muc#owner";
+static NSString *const XMPPMUCInfoNamespace  = @"http://jabber.org/protocol/disco#info";
 
 
 @interface XMPPRoom : XMPPModule
@@ -137,6 +138,7 @@ static NSString *const XMPPMUCOwnerNamespace = @"http://jabber.org/protocol/muc#
 
 #pragma mark Room Moderation
 
+- (void)fetchInfo;
 - (void)fetchBanList;
 - (void)fetchMembersList;
 - (void)fetchModeratorsList;
@@ -279,6 +281,8 @@ static NSString *const XMPPMUCOwnerNamespace = @"http://jabber.org/protocol/muc#
  * @see configureRoomUsingOptions:
 **/
 - (void)xmppRoom:(XMPPRoom *)sender didFetchConfigurationForm:(NSXMLElement *)configForm;
+
+- (void)xmppRoom:(XMPPRoom *)sender didFetchRoomInfo:(NSXMLElement *)configForm;
 
 - (void)xmppRoom:(XMPPRoom *)sender willSendConfiguration:(XMPPIQ *)roomConfigForm;
 

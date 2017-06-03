@@ -393,6 +393,119 @@ enum XMPPRoomState
 	}
 }
 
+- (void)fetchInfo
+{
+    dispatch_block_t block = ^{ @autoreleasepool {
+        
+        XMPPLogTrace();
+        
+        // <iq type='get'
+        //       id='config1'
+        //       to='coven@chat.shakespeare.lit'>
+        //   <query xmlns='http://jabber.org/protocol/disco#info'/>
+        // </iq>
+        
+        NSString *fetchID = [xmppStream generateUUID];
+        
+        NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:XMPPMUCInfoNamespace];
+        XMPPIQ *iq = [XMPPIQ iqWithType:@"get" to:roomJID elementID:fetchID child:query];
+        
+        [xmppStream sendElement:iq];
+        
+        [responseTracker addID:fetchID
+                        target:self
+                      selector:@selector(handleInfoResponse:withInfo:)
+                       timeout:60.0];
+        
+    }};
+    
+    if (dispatch_get_specific(moduleQueueTag))
+        block();
+    else
+        dispatch_async(moduleQueue, block);
+}
+
+- (void) handleInfoResponse:(XMPPIQ *)iq withInfo:(id <XMPPTrackingInfo>)info
+{
+    XMPPLogTrace();
+    
+    if ([[iq type] isEqualToString:@"result"])
+    {
+        // <iq from='coven@chat.shakespeare.lit'
+        //     id='ik3vs715'
+        //     to='hag66@shakespeare.lit/pda'
+        //     type='result'>
+        //   <query xmlns='http://jabber.org/protocol/disco#info'>
+        //     <identity
+        //         category='conference'
+        //         name='A Dark Cave'
+        //         type='text'/>
+        //     <feature var='http://jabber.org/protocol/muc'/>
+        //     <feature var='muc_passwordprotected'/>
+        //     <feature var='muc_hidden'/>
+        //     <feature var='muc_temporary'/>
+        //     <feature var='muc_open'/>
+        //     <feature var='muc_unmoderated'/>
+        //     <feature var='muc_nonanonymous'/>
+        //     <x xmlns='jabber:x:data' type='result'>
+        //       <field var='FORM_TYPE' type='hidden'>
+        //         <value>http://jabber.org/protocol/muc#roominfo</value>
+        //       </field>
+        //       <field var='muc#roominfo_description'
+        //              label='Description'>
+        //         <value>The place for all good witches!</value>
+        //       </field>
+        //       <field var='muc#roominfo_changesubject'
+        //              label='Occupants May Change the Subject'>
+        //         <value>true</value>
+        //       </field>
+        //       <field var='muc#roominfo_contactjid'
+        //              label='Contact Addresses'>
+        //         <value>crone1@shakespeare.lit</value>
+        //       </field>
+        //       <field var='muc#roominfo_subject'
+        //              label='Current Discussion Topic'>
+        //         <value>Spells</value>
+        //       </field>
+        //       <field var='muc#roomconfig_changesubject'
+        //              label='Subject can be modified'>
+        //         <value>true</value>
+        //       </field>
+        //       <field var='muc#roominfo_occupants'
+        //              label='Number of occupants'>
+        //         <value>3</value>
+        //       </field>
+        //       <field var='muc#roominfo_ldapgroup'
+        //              label='Associated LDAP Group'>
+        //         <value>cn=witches,dc=shakespeare,dc=lit</value>
+        //       </field>
+        //       <field var='muc#roominfo_lang'
+        //              label='Language of discussion'>
+        //         <value>en</value>
+        //       </field>
+        //       <field var='muc#roominfo_logs'
+        //              label='URL for discussion logs'>
+        //         <value>http://www.shakespeare.lit/chatlogs/coven/</value>
+        //       </field>
+        //       <field var='muc#maxhistoryfetch'
+        //              label='Maximum Number of History Messages Returned by Room'>
+        //         <value>50</value>
+        //       </field>
+        //       <field var='muc#roominfo_pubsub'
+        //              label='Associated pubsub node'>
+        //         <value>xmpp:pubsub.shakespeare.lit?;node=the-coven-node</value>
+        //       </field>
+        //     </x>
+        //   </query>
+        // </iq>
+        
+        NSXMLElement *query = [iq elementForName:@"query" xmlns:XMPPMUCInfoNamespace];
+        NSXMLElement *x     = [query elementForName:@"x" xmlns:@"jabber:x:data"];
+        
+        [multicastDelegate xmppRoom:self didFetchRoomInfo:x];
+    }
+}
+
 - (void)configureRoomUsingOptions:(NSXMLElement *)roomConfigForm
 {
 	dispatch_block_t block = ^{ @autoreleasepool {
